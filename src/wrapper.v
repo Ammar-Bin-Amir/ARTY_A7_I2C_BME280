@@ -1,17 +1,18 @@
 module wrapper (
     input wire clk,
     input wire rst,
+    input wire en,
     // Registers Selector
     input wire [3:0] register_selector,
     // I2C
     output wire scl,
+    output wire tristate,
     output wire sda_out,
     input wire sda_in,
     // Data
     output wire [7:0] data
 );
     
-    reg en;
     reg [6:0] ext_slave_address_in;
     reg ext_read_write_in;
     reg [7:0] ext_register_address_in;
@@ -26,6 +27,7 @@ module wrapper (
         .ext_read_write_in (ext_read_write_in),
         .ext_register_address_in (ext_register_address_in),
         .ext_data_in (ext_data_in),
+        .tristate (tristate),
         .sda_out (sda_out),
         .sda_in (sda_in),
         .ext_data_out (data)
@@ -67,108 +69,95 @@ module wrapper (
     
     always @(*) begin
         if (rst) begin
-            en = 0;
             ext_slave_address_in = 0;
             ext_read_write_in = 0;
             ext_register_address_in = 0;
             ext_data_in = 0;
         end
         else begin
-            case (register_selector)
-                DISABLE: begin
-                    en = 1'b0;
-                end
-                READ_ID: begin
-                    en = 1'b1;
-                    ext_slave_address_in = SLAVE_ADDRESS;
-                    ext_read_write_in = READ;
-                    ext_register_address_in = REGISTER_ID;
-                end
-                READ_CNTL_MEAS: begin
-                    en = 1'b1;
-                    ext_slave_address_in = SLAVE_ADDRESS;
-                    ext_read_write_in = READ;
-                    ext_register_address_in = REGISTER_CNTL_MEAS;
-                end
-                READ_CNTL_HUM: begin
-                    en = 1'b1;
-                    ext_slave_address_in = SLAVE_ADDRESS;
-                    ext_read_write_in = READ;
-                    ext_register_address_in = REGISTER_CNTL_HUM;
-                end
-                READ_CONFIG: begin
-                    en = 1'b1;
-                    ext_slave_address_in = SLAVE_ADDRESS;
-                    ext_read_write_in = READ;
-                    ext_register_address_in = REGISTER_CONFIG;
-                end
-                WRITE_CNTL_MEAS: begin
-                    en = 1'b1;
-                    ext_slave_address_in = SLAVE_ADDRESS;
-                    ext_read_write_in = WRITE;
-                    ext_register_address_in = REGISTER_CNTL_MEAS;
-                    ext_data_in = 8'b000_000_11;    // Normal Mode
-                end
-                // NOTHING: begin
+            if (en == 1'b0) begin
+                case (register_selector)
+                    // DISABLE: begin
                     
-                // end
-                WRITE_RESET: begin
-                    en = 1'b1;
-                    ext_slave_address_in = SLAVE_ADDRESS;
-                    ext_read_write_in = WRITE;
-                    ext_register_address_in = REGISTER_RESET;
-                    ext_data_in = 8'hB6;        // Power-On-Reset
-                end
-                READ_PRESS_MSB: begin
-                    en = 1'b1;
-                    ext_slave_address_in = SLAVE_ADDRESS;
-                    ext_read_write_in = READ;
-                    ext_register_address_in = REGISTER_PRESS_MSB;
-                end
-                READ_PRESS_LSB: begin
-                    en = 1'b1;
-                    ext_slave_address_in = SLAVE_ADDRESS;
-                    ext_read_write_in = READ;
-                    ext_register_address_in = REGISTER_PRESS_LSB;
-                end
-                READ_PRESS_XLSB: begin
-                    en = 1'b1;
-                    ext_slave_address_in = SLAVE_ADDRESS;
-                    ext_read_write_in = READ;
-                    ext_register_address_in = REGISTER_TEMP_XLSB;
-                end
-                READ_TEMP_MSB: begin
-                    en = 1'b1;
-                    ext_slave_address_in = SLAVE_ADDRESS;
-                    ext_read_write_in = READ;
-                    ext_register_address_in = REGISTER_TEMP_MSB;
-                end
-                READ_TEMP_LSB: begin
-                    en = 1'b1;
-                    ext_slave_address_in = SLAVE_ADDRESS;
-                    ext_read_write_in = READ;
-                    ext_register_address_in = REGISTER_TEMP_LSB;
-                end
-                READ_TEMP_XLSB: begin
-                    en = 1'b1;
-                    ext_slave_address_in = SLAVE_ADDRESS;
-                    ext_read_write_in = READ;
-                    ext_register_address_in = REGISTER_TEMP_XLSB;
-                end
-                READ_HUM_MSB: begin
-                    en = 1'b1;
-                    ext_slave_address_in = SLAVE_ADDRESS;
-                    ext_read_write_in = READ;
-                    ext_register_address_in = REGISTER_HUM_MSB;
-                end
-                READ_HUM_LSB: begin
-                    en = 1'b1;
-                    ext_slave_address_in = SLAVE_ADDRESS;
-                    ext_read_write_in = READ;
-                    ext_register_address_in = REGISTER_HUM_LSB;
-                end
-                // default: 
-            endcase
+                    // end
+                    READ_ID: begin
+                        ext_slave_address_in = SLAVE_ADDRESS;
+                        ext_read_write_in = READ;
+                        ext_register_address_in = REGISTER_ID;
+                    end
+                    READ_CNTL_MEAS: begin
+                        ext_slave_address_in = SLAVE_ADDRESS;
+                        ext_read_write_in = READ;
+                        ext_register_address_in = REGISTER_CNTL_MEAS;
+                    end
+                    READ_CNTL_HUM: begin
+                        ext_slave_address_in = SLAVE_ADDRESS;
+                        ext_read_write_in = READ;
+                        ext_register_address_in = REGISTER_CNTL_HUM;
+                    end
+                    READ_CONFIG: begin
+                        ext_slave_address_in = SLAVE_ADDRESS;
+                        ext_read_write_in = READ;
+                        ext_register_address_in = REGISTER_CONFIG;
+                    end
+                    WRITE_CNTL_MEAS: begin
+                        ext_slave_address_in = SLAVE_ADDRESS;
+                        ext_read_write_in = WRITE;
+                        ext_register_address_in = REGISTER_CNTL_MEAS;
+                        ext_data_in = 8'b000_000_11;    // Normal Mode
+                    end
+                    // NOTHING: begin
+                        
+                    // end
+                    WRITE_RESET: begin
+                        ext_slave_address_in = SLAVE_ADDRESS;
+                        ext_read_write_in = WRITE;
+                        ext_register_address_in = REGISTER_RESET;
+                        ext_data_in = 8'hB6;        // Power-On-Reset
+                    end
+                    READ_PRESS_MSB: begin
+                        ext_slave_address_in = SLAVE_ADDRESS;
+                        ext_read_write_in = READ;
+                        ext_register_address_in = REGISTER_PRESS_MSB;
+                    end
+                    READ_PRESS_LSB: begin
+                        ext_slave_address_in = SLAVE_ADDRESS;
+                        ext_read_write_in = READ;
+                        ext_register_address_in = REGISTER_PRESS_LSB;
+                    end
+                    READ_PRESS_XLSB: begin
+                        ext_slave_address_in = SLAVE_ADDRESS;
+                        ext_read_write_in = READ;
+                        ext_register_address_in = REGISTER_TEMP_XLSB;
+                    end
+                    READ_TEMP_MSB: begin
+                        ext_slave_address_in = SLAVE_ADDRESS;
+                        ext_read_write_in = READ;
+                        ext_register_address_in = REGISTER_TEMP_MSB;
+                    end
+                    READ_TEMP_LSB: begin
+                        ext_slave_address_in = SLAVE_ADDRESS;
+                        ext_read_write_in = READ;
+                        ext_register_address_in = REGISTER_TEMP_LSB;
+                    end
+                    READ_TEMP_XLSB: begin
+                        ext_slave_address_in = SLAVE_ADDRESS;
+                        ext_read_write_in = READ;
+                        ext_register_address_in = REGISTER_TEMP_XLSB;
+                    end
+                    READ_HUM_MSB: begin
+                        ext_slave_address_in = SLAVE_ADDRESS;
+                        ext_read_write_in = READ;
+                        ext_register_address_in = REGISTER_HUM_MSB;
+                    end
+                    READ_HUM_LSB: begin
+                        ext_slave_address_in = SLAVE_ADDRESS;
+                        ext_read_write_in = READ;
+                        ext_register_address_in = REGISTER_HUM_LSB;
+                    end
+                    // default: 
+                endcase
+            end
         end
     end
 

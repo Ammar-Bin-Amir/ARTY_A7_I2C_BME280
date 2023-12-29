@@ -4,10 +4,12 @@ module wrapper_tb;
     
     reg clk;
     reg rst;
+    reg en;
     // Registers Selector
-    reg [4:0] register_selector;
+    reg [3:0] register_selector;
     // I2C
     wire scl;
+    wire tristate;
     wire sda_out;
     reg sda_in;
     // Data
@@ -16,8 +18,10 @@ module wrapper_tb;
     wrapper uut (
         .clk (clk),
         .rst (rst),
+        .en (en),
         .register_selector (register_selector),
         .scl (scl),
+        .tristate (trisate),
         .sda_out (sda_out),
         .sda_in (sda_in),
         .data (data)
@@ -31,9 +35,11 @@ module wrapper_tb;
         #10 rst = 1;
         #50 rst = 0;
         for (integer i = 0; i < 16; i = i + 1) begin
-            #1000 register_selector = i;
+            #3000 register_selector = i;
+            #100 en = 1;
+            #100 en = 0;
         end
-        #1000 $finish;
+        #3000 $finish;
     end
     
     initial begin
