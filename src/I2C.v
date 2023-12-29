@@ -87,6 +87,7 @@ module i2c (
     // Master-Slave Interface
     
     wire scl;
+    wire tristate;
     wire sda_out;
     wire sda_in;
 
@@ -99,6 +100,7 @@ module i2c (
         .ext_read_write_in (read_write),
         .ext_register_address_in (register_address),
         .ext_data_in (data_in),
+        .tristate (tristate),
         .sda_out (sda_out),
         .sda_in (sda_in),
         .ext_data_out (data_out)
