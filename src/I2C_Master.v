@@ -9,6 +9,7 @@ module i2c_master (
     input wire ext_read_write_in,
     input wire [7:0] ext_register_address_in,
     input wire [7:0] ext_data_in,
+    output reg tristate,
     output reg sda_out,
     input wire sda_in,
     output wire [7:0] ext_data_out
@@ -201,11 +202,8 @@ module i2c_master (
         end
     end
 
-    reg tristate;
-
     always @(*) begin
         if (rst) begin
-            tristate = 0;
             next_state = 0;
             repeated_start_indication = 0;
         end
@@ -213,7 +211,7 @@ module i2c_master (
             case (current_state)
                 IDLE: begin
                     scl = 1;
-                    tristate = 1;
+                    tristate = 0;
                     sda_out = 1;
                     if (en == 1'b1) begin
                         next_state = START;
@@ -221,14 +219,14 @@ module i2c_master (
                 end
                 START: begin
                     scl = ~clock_count;
-                    tristate = 1;
+                    tristate = 0;
                     sda_out = 0;
                     repeated_start_indication = 0;
                     next_state = SLAVE_ADDRESS;
                 end
                 SLAVE_ADDRESS: begin
                     scl = ~clock_count;
-                    tristate = 1;
+                    tristate = 0;
                     // Write
                     if (read_write_save == 0) begin
                         sda_out = slave_address_save[7];
@@ -256,7 +254,7 @@ module i2c_master (
                 end
                 SLAVE_ADDRESS_ACKNOWLEDGE: begin
                     scl = ~clock_count;
-                    tristate = 0;
+                    tristate = 1;
                     sda_out = 1;
                     // ACK
                     if ((bit_count == 8) && (scl == 1'b1) && (sda_in == 1'b0)) begin
@@ -269,7 +267,7 @@ module i2c_master (
                 end
                 REGISTER_ADDRESS: begin
                     scl = ~clock_count;
-                    tristate = 1;
+                    tristate = 0;
                     sda_out = register_address_save[7];
                     if ((bit_count == 16) && (scl == 1'b1)) begin
                         next_state = REGISTER_ADDRESS_ACKNOWLEDGE;
@@ -277,7 +275,7 @@ module i2c_master (
                 end
                 REGISTER_ADDRESS_ACKNOWLEDGE: begin
                     scl = ~clock_count;
-                    tristate = 0;
+                    tristate = 1;
                     sda_out = 1;
                     // Write
                     if (read_write_save == 0) begin
@@ -321,12 +319,12 @@ module i2c_master (
                     scl = ~clock_count;
                     // Write
                     if (read_write_save == 0) begin
-                        tristate = 1;
+                        tristate = 0;
                         sda_out = data_write[7];
                     end
                     // Read
                     if (read_write_save == 1) begin
-                        tristate = 0;
+                        tristate = 1;
                         sda_out = 1;
                     end
                     // Next State
@@ -338,7 +336,7 @@ module i2c_master (
                     scl = ~clock_count;
                     // Write
                     if (read_write_save == 0) begin
-                        tristate = 0;
+                        tristate = 1;
                         sda_out = 1;
                         // ACK
                         if ((bit_count == 26) && (scl == 1'b1) && (sda_in == 1'b0)) begin
@@ -351,7 +349,7 @@ module i2c_master (
                     end
                     // Read
                     if (read_write_save == 1) begin
-                        tristate = 1;
+                        tristate = 0;
                         sda_out = ack;
                         // ACK
                         if ((bit_count == 26) && (scl == 1'b1) && (sda_out == 1'b0)) begin
@@ -365,13 +363,13 @@ module i2c_master (
                 end
                 STOP: begin
                     scl = 1;
-                    tristate = 1;
+                    tristate = 0;
                     sda_out = 0;
                     next_state = IDLE;
                 end
                 REPEATED_START: begin
                     scl = 1;
-                    tristate = 1;
+                    tristate = 0;
                     sda_out = 0;
                     repeated_start_indication = 1;
                     next_state = SLAVE_ADDRESS;

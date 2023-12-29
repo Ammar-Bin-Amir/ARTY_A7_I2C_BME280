@@ -12,6 +12,7 @@ module i2c_master_tb;
     reg ext_read_write_in;
     reg [7:0] ext_register_address_in;
     reg [7:0] ext_data_in;
+    wire tristate;
     wire sda_out;
     reg sda_in;
     wire [7:0] ext_data_out;
@@ -25,6 +26,7 @@ module i2c_master_tb;
         .ext_read_write_in (ext_read_write_in),
         .ext_register_address_in (ext_register_address_in),
         .ext_data_in (ext_data_in),
+        .tristate (tristate),
         .sda_out (sda_out),
         .sda_in (sda_in),
         .ext_data_out (ext_data_out)
