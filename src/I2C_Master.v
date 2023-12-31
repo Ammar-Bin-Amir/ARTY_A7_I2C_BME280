@@ -189,20 +189,25 @@ module i2c_master (
 
     reg [3:0] current_state, next_state;
     reg repeated_start_indication;
-    reg delayed_repeated_start_indication;
+    reg repeated_start_signal;
 
     always @(posedge clk) begin
         if (rst) begin
             current_state <= 0;
-            delayed_repeated_start_indication <= 0;
+            repeated_start_signal <= 0;
         end
         else begin
             current_state <= next_state;
-            delayed_repeated_start_indication <= repeated_start_indication;
+            repeated_start_signal <= repeated_start_indication;
         end
     end
 
     always @(*) begin
+        scl = 1;
+        tristate = 0;
+        sda_out = 1;
+        next_state = 0;
+        repeated_start_indication = repeated_start_signal;
         if (rst) begin
             next_state = 0;
             repeated_start_indication = 0;
@@ -232,7 +237,7 @@ module i2c_master (
                         sda_out = slave_address_save[7];
                     end
                     // Read
-                    if (read_write_save == 1) begin
+                    else begin
                         // Start
                         if (repeated_start_indication == 1'b0) begin
                             if (bit_count == 7) begin
@@ -243,7 +248,7 @@ module i2c_master (
                             end
                         end
                         // Repeated Start
-                        if (repeated_start_indication == 1'b1) begin
+                        else begin
                             sda_out = slave_address_save[7];
                         end 
                     end
@@ -251,18 +256,26 @@ module i2c_master (
                     if ((bit_count == 7) && (scl == 1'b1)) begin
                         next_state = SLAVE_ADDRESS_ACKNOWLEDGE;
                     end
+                    else begin
+                        next_state = current_state;
+                    end
                 end
                 SLAVE_ADDRESS_ACKNOWLEDGE: begin
                     scl = ~clock_count;
                     tristate = 1;
                     sda_out = 1;
-                    // ACK
-                    if ((bit_count == 8) && (scl == 1'b1) && (sda_in == 1'b0)) begin
-                        next_state = REGISTER_ADDRESS;
+                    if ((bit_count == 8) && (scl == 1'b1)) begin
+                        // ACK
+                        if (sda_in == 1'b0) begin
+                            next_state = REGISTER_ADDRESS;
+                        end
+                        // NACK
+                        else begin
+                            next_state = STOP;
+                        end
                     end
-                    // NACK
-                    if ((bit_count == 8) && (scl == 1'b1) && (sda_in == 1'b1)) begin
-                        next_state = STOP;
+                    else begin
+                        next_state = current_state;
                     end
                 end
                 REGISTER_ADDRESS: begin
@@ -272,6 +285,9 @@ module i2c_master (
                     if ((bit_count == 16) && (scl == 1'b1)) begin
                         next_state = REGISTER_ADDRESS_ACKNOWLEDGE;
                     end
+                    else begin
+                        next_state = current_state;
+                    end
                 end
                 REGISTER_ADDRESS_ACKNOWLEDGE: begin
                     scl = ~clock_count;
@@ -279,41 +295,55 @@ module i2c_master (
                     sda_out = 1;
                     // Write
                     if (read_write_save == 0) begin
-                        // ACK
-                        if ((bit_count == 17) && (scl == 1'b1) && (sda_in == 1'b0)) begin
-                            next_state = DATA_BYTE;
-                        end
-                        // NACK
-                        if ((bit_count == 17) && (scl == 1'b1) && (sda_in == 1'b1)) begin
-                            next_state = STOP;
-                        end
-                    end
-                    // Read
-                    if (read_write_save == 1) begin
-                        // Start
-                        if (repeated_start_indication == 1'b0) begin
+                        if ((bit_count == 17) && (scl == 1'b1)) begin
                             // ACK
-                            if ((bit_count == 17) && (scl == 1'b1) && (sda_in == 1'b0)) begin
-                                next_state = REPEATED_START;
-                            end
-                            // NACK
-                            if ((bit_count == 17) && (scl == 1'b1) && (sda_in == 1'b1)) begin
-                                next_state = STOP;
-                            end
-                        end
-                        // Repeated Start
-                        if (repeated_start_indication == 1'b1) begin
-                            // ACK
-                            if ((bit_count == 17) && (scl == 1'b1) && (sda_in == 1'b0)) begin
+                            if (sda_in == 1'b0) begin
                                 next_state = DATA_BYTE;
                             end
                             // NACK
-                            if ((bit_count == 17) && (scl == 1'b1) && (sda_in == 1'b1)) begin
+                            else begin
                                 next_state = STOP;
                             end
                         end
+                        else begin
+                            next_state = current_state;
+                        end
                     end
-                    
+                    // Read
+                    else begin
+                        // Start
+                        if (repeated_start_indication == 1'b0) begin
+                            if ((bit_count == 17) && (scl == 1'b1)) begin
+                                // ACK
+                                if (sda_in == 1'b0) begin
+                                    next_state = REPEATED_START;
+                                end
+                                // NACK
+                                else begin
+                                    next_state = STOP;
+                                end
+                            end
+                            else begin
+                                next_state = current_state;
+                            end
+                        end
+                        // Repeated Start
+                        else begin
+                            if ((bit_count == 17) && (scl == 1'b1)) begin
+                                // ACK
+                                if (sda_in == 1'b0) begin
+                                    next_state = DATA_BYTE;
+                                end
+                                // NACK
+                                else begin
+                                    next_state = STOP;
+                                end
+                            end
+                            else begin
+                                next_state = current_state;
+                            end
+                        end
+                    end
                 end
                 DATA_BYTE: begin
                     scl = ~clock_count;
@@ -323,13 +353,16 @@ module i2c_master (
                         sda_out = data_write[7];
                     end
                     // Read
-                    if (read_write_save == 1) begin
+                    else begin
                         tristate = 1;
                         sda_out = 1;
                     end
                     // Next State
                     if ((bit_count == 25) && (scl == 1'b1)) begin
                         next_state = DATA_BYTE_ACKNOWLEDGE;
+                    end
+                    else begin
+                        next_state = current_state;
                     end
                 end
                 DATA_BYTE_ACKNOWLEDGE: begin
@@ -338,26 +371,36 @@ module i2c_master (
                     if (read_write_save == 0) begin
                         tristate = 1;
                         sda_out = 1;
-                        // ACK
-                        if ((bit_count == 26) && (scl == 1'b1) && (sda_in == 1'b0)) begin
-                            next_state = STOP;
+                        if ((bit_count == 26) && (scl == 1'b1)) begin
+                            // ACK
+                            if (sda_in == 1'b0) begin
+                                next_state = STOP;
+                            end
+                            // NACK
+                            else begin
+                                next_state = STOP;
+                            end
                         end
-                        // NACK
-                        if ((bit_count == 26) && (scl == 1'b1) && (sda_in == 1'b1)) begin
-                            next_state = STOP;
+                        else begin
+                            next_state = current_state;
                         end
                     end
                     // Read
-                    if (read_write_save == 1) begin
+                    else begin
                         tristate = 0;
                         sda_out = ack;
-                        // ACK
-                        if ((bit_count == 26) && (scl == 1'b1) && (sda_out == 1'b0)) begin
-                            next_state = STOP;
+                        if ((bit_count == 26) && (scl == 1'b1)) begin
+                            // ACK
+                            if (sda_out == 1'b0) begin
+                                next_state = STOP;
+                            end
+                            // NACK
+                            else begin
+                                next_state = STOP;
+                            end
                         end
-                        // NACK
-                        if ((bit_count == 26) && (scl == 1'b1) && (sda_out == 1'b1)) begin
-                            next_state = STOP;
+                        else begin
+                            next_state = current_state;
                         end
                     end
                 end

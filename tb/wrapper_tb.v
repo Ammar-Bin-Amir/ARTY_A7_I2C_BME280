@@ -10,8 +10,7 @@ module wrapper_tb;
     // I2C
     wire scl;
     wire tristate;
-    wire sda_out;
-    reg sda_in;
+    wire sda;
     // Data
     wire [7:0] data;
 
@@ -21,14 +20,17 @@ module wrapper_tb;
         .en (en),
         .register_selector (register_selector),
         .scl (scl),
-        .tristate (trisate),
-        .sda_out (sda_out),
-        .sda_in (sda_in),
+        .tristate (tristate),
+        .sda (sda),
         .data (data)
     );
 
     initial clk = 0;
     always #10 clk = ~clk;
+
+    reg sda_in;
+
+    assign sda = tristate ? sda_in : 1'bz;
 
     initial begin
         sda_in = 0;

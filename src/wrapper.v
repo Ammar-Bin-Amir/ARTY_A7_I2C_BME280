@@ -7,12 +7,17 @@ module wrapper (
     // I2C
     output wire scl,
     output wire tristate,
-    output wire sda_out,
-    input wire sda_in,
+    inout wire sda,
     // Data
     output wire [7:0] data
 );
     
+    // InOut Buffer
+    wire sda_out;
+
+    assign sda = tristate ? 1'bz : sda_out;
+    
+    // I2C Master
     reg [6:0] ext_slave_address_in;
     reg ext_read_write_in;
     reg [7:0] ext_register_address_in;
@@ -29,10 +34,11 @@ module wrapper (
         .ext_data_in (ext_data_in),
         .tristate (tristate),
         .sda_out (sda_out),
-        .sda_in (sda_in),
+        .sda_in (sda),
         .ext_data_out (data)
     );
 
+    // Wrapper
     localparam SLAVE_ADDRESS = 7'b111_0110;
     localparam WRITE = 1'b0;
     localparam READ = 1'b1;
