@@ -1,5 +1,6 @@
 module wrapper (
-    input wire clk,
+    input wire clk_pll,
+    output wire clk,
     input wire rst,
     input wire en,
     // Registers Selector
@@ -11,6 +12,12 @@ module wrapper (
     // Data
     output wire [7:0] data
 );
+    
+    // PLL Clock
+    clk_wiz_0 uut_clk (
+        .clk_out1 (clk),
+        .clk_in1 (clk_pll)
+    );
     
     // InOut Buffer
     wire sda_out;
@@ -74,6 +81,10 @@ module wrapper (
     localparam READ_HUM_LSB = 4'b1111;
     
     always @(*) begin
+        ext_slave_address_in = 0;
+        ext_read_write_in = 0;
+        ext_register_address_in = 0;
+        ext_data_in = 0;
         if (rst) begin
             ext_slave_address_in = 0;
             ext_read_write_in = 0;
@@ -163,6 +174,12 @@ module wrapper (
                     end
                     // default: 
                 endcase
+            end
+            else begin
+                ext_slave_address_in = SLAVE_ADDRESS;
+                ext_read_write_in = 0;
+                ext_register_address_in = 0;
+                ext_data_in = 0;
             end
         end
     end

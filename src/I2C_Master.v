@@ -69,7 +69,7 @@ module i2c_master (
     reg [7:0] slave_address_save;
     reg read_write_save;
 
-    always @(posedge clk or rst) begin
+    always @(posedge clk) begin
         if (rst) begin
             slave_address_save <= 0;
             read_write_save <= 0;

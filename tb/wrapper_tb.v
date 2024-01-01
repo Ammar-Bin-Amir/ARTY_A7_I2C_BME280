@@ -2,7 +2,8 @@
 
 module wrapper_tb;
     
-    reg clk;
+    reg clk_pll;
+    wire clk;
     reg rst;
     reg en;
     // Registers Selector
@@ -15,6 +16,7 @@ module wrapper_tb;
     wire [7:0] data;
 
     wrapper uut (
+        .clk_pll (clk_pll),
         .clk (clk),
         .rst (rst),
         .en (en),
@@ -25,8 +27,8 @@ module wrapper_tb;
         .data (data)
     );
 
-    initial clk = 0;
-    always #10 clk = ~clk;
+    initial clk_pll = 0;
+    always #10 clk_pll = ~clk_pll;
 
     reg sda_in;
 
@@ -37,11 +39,11 @@ module wrapper_tb;
         #10 rst = 1;
         #50 rst = 0;
         for (integer i = 0; i < 16; i = i + 1) begin
-            #3000 register_selector = i;
-            #100 en = 1;
-            #100 en = 0;
+            #50000 register_selector = i;
+            #1000 en = 1;
+            #1000 en = 0;
         end
-        #3000 $finish;
+        #50000 $finish;
     end
     
     initial begin
