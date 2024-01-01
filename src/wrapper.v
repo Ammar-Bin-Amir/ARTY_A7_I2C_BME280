@@ -1,6 +1,7 @@
 module wrapper (
-    input wire clk_pll,
-    output wire clk,
+    input wire clk,
+    // input wire clk_pll,
+    // output wire clk,
     input wire rst,
     input wire en,
     // Registers Selector
@@ -13,11 +14,11 @@ module wrapper (
     output wire [7:0] data
 );
     
-    // PLL Clock
-    clk_wiz_0 uut_clk (
-        .clk_out1 (clk),
-        .clk_in1 (clk_pll)
-    );
+    // // PLL Clock
+    // clk_wiz_0 uut_clk (
+    //     .clk_out1 (clk),
+    //     .clk_in1 (clk_pll)
+    // );
     
     // InOut Buffer
     wire sda_out;

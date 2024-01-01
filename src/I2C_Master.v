@@ -165,7 +165,7 @@ module i2c_master (
             ack = 1;
         end
         else begin
-            if (bit_count == 26) begin
+            if (bit_count == 17) begin
                 ack = 0;
             end
             else begin
@@ -264,18 +264,56 @@ module i2c_master (
                     scl = ~clock_count;
                     tristate = 1;
                     sda_out = 1;
-                    if ((bit_count == 8) && (scl == 1'b1)) begin
-                        // ACK
-                        if (sda_in == 1'b0) begin
-                            next_state = REGISTER_ADDRESS;
+                    // Write
+                    if (read_write_save == 0) begin
+                        if ((bit_count == 8) && (scl == 1'b1)) begin
+                            // ACK
+                            if (sda_in == 1'b0) begin
+                                next_state = REGISTER_ADDRESS;
+                            end
+                            // NACK
+                            else begin
+                                next_state = STOP;
+                            end
                         end
-                        // NACK
                         else begin
-                            next_state = STOP;
+                            next_state = current_state;
                         end
                     end
+                    // Read
                     else begin
-                        next_state = current_state;
+                        // Start
+                        if (repeated_start_indication == 1'b0) begin
+                            if ((bit_count == 8) && (scl == 1'b1)) begin
+                                // ACK
+                                if (sda_in == 1'b0) begin
+                                    next_state = REGISTER_ADDRESS;
+                                end
+                                // NACK
+                                else begin
+                                    next_state = STOP;
+                                end
+                            end
+                            else begin
+                                next_state = current_state;
+                            end
+                        end
+                        // Repeated Start
+                        else begin
+                            if ((bit_count == 8) && (scl == 1'b1)) begin
+                                // ACK
+                                if (sda_in == 1'b0) begin
+                                    next_state = DATA_BYTE;
+                                end
+                                // NACK
+                                else begin
+                                    next_state = STOP;
+                                end
+                            end
+                            else begin
+                                next_state = current_state;
+                            end
+                        end
                     end
                 end
                 REGISTER_ADDRESS: begin
@@ -351,19 +389,27 @@ module i2c_master (
                     if (read_write_save == 0) begin
                         tristate = 0;
                         sda_out = data_write[7];
+                        // Next State
+                        if ((bit_count == 25) && (scl == 1'b1)) begin
+                            next_state = DATA_BYTE_ACKNOWLEDGE;
+                        end
+                        else begin
+                            next_state = current_state;
+                        end
                     end
                     // Read
                     else begin
                         tristate = 1;
                         sda_out = 1;
+                        // Next State
+                        if ((bit_count == 16) && (scl == 1'b1)) begin
+                            next_state = DATA_BYTE_ACKNOWLEDGE;
+                        end
+                        else begin
+                            next_state = current_state;
+                        end
                     end
-                    // Next State
-                    if ((bit_count == 25) && (scl == 1'b1)) begin
-                        next_state = DATA_BYTE_ACKNOWLEDGE;
-                    end
-                    else begin
-                        next_state = current_state;
-                    end
+                    
                 end
                 DATA_BYTE_ACKNOWLEDGE: begin
                     scl = ~clock_count;
@@ -388,8 +434,8 @@ module i2c_master (
                     // Read
                     else begin
                         tristate = 0;
-                        sda_out = ack;
-                        if ((bit_count == 26) && (scl == 1'b1)) begin
+                        sda_out = ~ack;
+                        if ((bit_count == 17) && (scl == 1'b1)) begin
                             // ACK
                             if (sda_out == 1'b0) begin
                                 next_state = STOP;

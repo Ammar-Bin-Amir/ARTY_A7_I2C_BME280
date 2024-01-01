@@ -16,8 +16,8 @@ module wrapper_tb;
     wire [7:0] data;
 
     wrapper uut (
-        .clk_pll (clk_pll),
-        .clk (clk),
+        .clk (clk_pll),
+        // .clk (clk),
         .rst (rst),
         .en (en),
         .register_selector (register_selector),
@@ -40,8 +40,8 @@ module wrapper_tb;
         #50 rst = 0;
         for (integer i = 0; i < 16; i = i + 1) begin
             #50000 register_selector = i;
-            #1000 en = 1;
-            #1000 en = 0;
+            #100 en = 1;
+            #100 en = 0;
         end
         #50000 $finish;
     end
